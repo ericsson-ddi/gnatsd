@@ -19,11 +19,17 @@ import (
 
 // For multiple accounts/users.
 type User struct {
-	Username      string       `json:"user"`
-	Password      string       `json:"password"`
-	Permissions   *Permissions `json:"permissions"`
-	Authenticator string       `json:"authenticator"`
-	Token         string       `json:"token"`
+	Username    string       `json:"user"`
+	Password    string       `json:"password"`
+	Permissions *Permissions `json:"permissions"`
+	Token       string       `json:"token"`
+}
+
+// Authenticator for auth, publish or subscribe
+type AuthenticatorHub struct {
+	AuthAuthenticator      []string `json:"auth_authenticator"`
+	SubscribeAuthenticator []string `json:"subscribe_authenticator"`
+	PublishAuthenticator   []string `json:"publish_authenticator"`
 }
 
 // Authorization are the allowed subjects on a per
@@ -35,52 +41,52 @@ type Permissions struct {
 
 // Options block for gnatsd server.
 type Options struct {
-	Host               string        `json:"addr"`
-	Port               int           `json:"port"`
-	Trace              bool          `json:"-"`
-	Debug              bool          `json:"-"`
-	NoLog              bool          `json:"-"`
-	NoSigs             bool          `json:"-"`
-	Logtime            bool          `json:"-"`
-	MaxConn            int           `json:"max_connections"`
-	Users              []*User       `json:"-"`
-	Username           string        `json:"-"`
-	Password           string        `json:"-"`
-	AuthenticatorHub   []string      `json:"-"`
-	DynamicUser        bool          `json:"-"`
-	Authorization      string        `json:"-"`
-	PingInterval       time.Duration `json:"ping_interval"`
-	MaxPingsOut        int           `json:"ping_max"`
-	HTTPHost           string        `json:"http_host"`
-	HTTPPort           int           `json:"http_port"`
-	HTTPSPort          int           `json:"https_port"`
-	AuthTimeout        float64       `json:"auth_timeout"`
-	MaxControlLine     int           `json:"max_control_line"`
-	MaxPayload         int           `json:"max_payload"`
-	MaxPending         int           `json:"max_pending_size"`
-	ClusterHost        string        `json:"addr"`
-	ClusterPort        int           `json:"cluster_port"`
-	ClusterUsername    string        `json:"-"`
-	ClusterPassword    string        `json:"-"`
-	ClusterAuthTimeout float64       `json:"auth_timeout"`
-	ClusterTLSTimeout  float64       `json:"-"`
-	ClusterTLSConfig   *tls.Config   `json:"-"`
-	ClusterListenStr   string        `json:"-"`
-	ClusterNoAdvertise bool          `json:"-"`
-	ProfPort           int           `json:"-"`
-	PidFile            string        `json:"-"`
-	LogFile            string        `json:"-"`
-	Syslog             bool          `json:"-"`
-	RemoteSyslog       string        `json:"-"`
-	Routes             []*url.URL    `json:"-"`
-	RoutesStr          string        `json:"-"`
-	TLSTimeout         float64       `json:"tls_timeout"`
-	TLS                bool          `json:"-"`
-	TLSVerify          bool          `json:"-"`
-	TLSCert            string        `json:"-"`
-	TLSKey             string        `json:"-"`
-	TLSCaCert          string        `json:"-"`
-	TLSConfig          *tls.Config   `json:"-"`
+	Host               string            `json:"addr"`
+	Port               int               `json:"port"`
+	Trace              bool              `json:"-"`
+	Debug              bool              `json:"-"`
+	NoLog              bool              `json:"-"`
+	NoSigs             bool              `json:"-"`
+	Logtime            bool              `json:"-"`
+	MaxConn            int               `json:"max_connections"`
+	Users              []*User           `json:"-"`
+	Username           string            `json:"-"`
+	Password           string            `json:"-"`
+	AuthenticatorHub   *AuthenticatorHub `json:"-"`
+	DynamicUser        bool              `json:"-"`
+	Authorization      string            `json:"-"`
+	PingInterval       time.Duration     `json:"ping_interval"`
+	MaxPingsOut        int               `json:"ping_max"`
+	HTTPHost           string            `json:"http_host"`
+	HTTPPort           int               `json:"http_port"`
+	HTTPSPort          int               `json:"https_port"`
+	AuthTimeout        float64           `json:"auth_timeout"`
+	MaxControlLine     int               `json:"max_control_line"`
+	MaxPayload         int               `json:"max_payload"`
+	MaxPending         int               `json:"max_pending_size"`
+	ClusterHost        string            `json:"addr"`
+	ClusterPort        int               `json:"cluster_port"`
+	ClusterUsername    string            `json:"-"`
+	ClusterPassword    string            `json:"-"`
+	ClusterAuthTimeout float64           `json:"auth_timeout"`
+	ClusterTLSTimeout  float64           `json:"-"`
+	ClusterTLSConfig   *tls.Config       `json:"-"`
+	ClusterListenStr   string            `json:"-"`
+	ClusterNoAdvertise bool              `json:"-"`
+	ProfPort           int               `json:"-"`
+	PidFile            string            `json:"-"`
+	LogFile            string            `json:"-"`
+	Syslog             bool              `json:"-"`
+	RemoteSyslog       string            `json:"-"`
+	Routes             []*url.URL        `json:"-"`
+	RoutesStr          string            `json:"-"`
+	TLSTimeout         float64           `json:"tls_timeout"`
+	TLS                bool              `json:"-"`
+	TLSVerify          bool              `json:"-"`
+	TLSCert            string            `json:"-"`
+	TLSKey             string            `json:"-"`
+	TLSCaCert          string            `json:"-"`
+	TLSConfig          *tls.Config       `json:"-"`
 }
 
 // Configuration file authorization section.
@@ -92,7 +98,7 @@ type authorization struct {
 	users              []*User
 	timeout            float64
 	defaultPermissions *Permissions
-	authenticatorHub   []string
+	authenticatorHub   *AuthenticatorHub
 	dynamicUser        bool
 }
 

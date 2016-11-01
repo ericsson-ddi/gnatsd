@@ -24,7 +24,7 @@ const (
 // Plain authentication is a basic username and password
 type DynamicUser struct {
 	users                map[string]*server.User
-	authenticatorhub     []string
+	authenticatorhub     map[string]*server.AuthenticatorHub
 	authenticatorHubConn *nats.Conn
 }
 
