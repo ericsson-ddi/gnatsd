@@ -95,7 +95,7 @@ func authAuthenticatorRequest(authAuthenticatorUrl string, username string, pass
 
 	server.Debugf("authAuthenticatorRequest Body: %v", string(body))
 
-	authenticatorStatus := make(*AuthenticatorStatus)
+	authenticatorStatus := &AuthenticatorStatus{status: ""}
 	err = json.Unmarshal(msg.Data, &authenticatorStatus)
 	if err != nil {
 		server.Errorf("authAuthenticatorRequest Error: %v", err)

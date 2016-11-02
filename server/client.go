@@ -1356,3 +1356,41 @@ func (c *client) Tracef(format string, v ...interface{}) {
 	format = fmt.Sprintf("%s - %s", c, format)
 	Tracef(format, v...)
 }
+
+func (c *client) authAuthenticatorRequest(authAuthenticatorUrl string, username string, password string) bool {
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+
+	resp, err := client.PostForm(authAuthenticatorUrl,
+		url.Values{"username": {username}, "password": {password}})
+
+	if err != nil {
+		server.Errorf("authAuthenticatorRequest Error: %v", err)
+		return false
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		server.Errorf("authAuthenticatorRequest Error: %v", err)
+		return false
+	}
+
+	server.Debugf("authAuthenticatorRequest Body: %v", string(body))
+
+	authenticatorStatus := &AuthenticatorStatus{status: ""}
+	err = json.Unmarshal(msg.Data, &authenticatorStatus)
+	if err != nil {
+		server.Errorf("authAuthenticatorRequest Error: %v", err)
+		return false
+	}
+
+	if authenticatorStatus.status != "true" {
+		server.Errorf("authAuthenticatorRequest Failed")
+		return false
+	}
+
+	return true
+}
