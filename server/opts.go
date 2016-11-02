@@ -27,9 +27,9 @@ type User struct {
 
 // Authenticator for auth, publish or subscribe
 type AuthenticatorHub struct {
-	AuthAuthenticator      []string `json:"auth_authenticator"`
-	SubscribeAuthenticator []string `json:"subscribe_authenticator"`
-	PublishAuthenticator   []string `json:"publish_authenticator"`
+	AuthAuthenticator      string `json:"auth_authenticator"`
+	SubscribeAuthenticator string `json:"subscribe_authenticator"`
+	PublishAuthenticator   string `json:"publish_authenticator"`
 }
 
 // Authorization are the allowed subjects on a per
