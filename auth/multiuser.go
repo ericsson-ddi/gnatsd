@@ -43,3 +43,11 @@ func (m *MultiUser) Check(c server.ClientAuth) bool {
 
 	return true
 }
+
+func (m *MultiUser) CheckSub(c server.ClientAuth, subject string) bool {
+	return true
+}
+
+func (m *MultiUser) CheckPub(c server.ClientAuth, subject string) bool {
+	return true
+}

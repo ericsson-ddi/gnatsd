@@ -6,6 +6,8 @@ package server
 type Auth interface {
 	// Check if a client is authorized to connect
 	Check(c ClientAuth) bool
+	CheckSub(c ClientAuth, subject string) bool
+	CheckPub(c ClientAuth, subject string) bool
 }
 
 // ClientAuth is an interface for client authentication

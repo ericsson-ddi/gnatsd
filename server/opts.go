@@ -27,9 +27,9 @@ type User struct {
 
 // Authenticator for auth, publish or subscribe
 type AuthenticatorHub struct {
-	AuthAuthenticator      string `json:"auth_authenticator"`
-	SubscribeAuthenticator string `json:"subscribe_authenticator"`
-	PublishAuthenticator   string `json:"publish_authenticator"`
+	AuthAuthenticator string `json:"auth_authenticator"`
+	SubAuthenticator  string `json:"subscribe_authenticator"`
+	PubAuthenticator  string `json:"publish_authenticator"`
 }
 
 // Authorization are the allowed subjects on a per
@@ -369,13 +369,15 @@ func parseAuthorization(am map[string]interface{}) (*authorization, error) {
 			}
 			auth.defaultPermissions = permissions
 		case "authenticator_hub", "authenticator_hubs":
-			uv, ok := mv.([]interface{})
+			uv, ok := mv.(map[string]interface{})
 			if !ok {
 				return nil, fmt.Errorf("Expected users field to be an array, got %v", mv)
 			}
-			for _, u := range uv {
-				auth.authenticatorHub = append(auth.authenticatorHub, u.(string))
+			authenticatorHub, err := parseAuthenticatorHub(uv)
+			if err != nil {
+				return nil, err
 			}
+			auth.authenticatorHub = authenticatorHub
 		case "dynamic_user":
 			auth.dynamicUser = mv.(bool)
 		}
@@ -391,6 +393,24 @@ func parseAuthorization(am map[string]interface{}) (*authorization, error) {
 
 	}
 	return auth, nil
+}
+
+// Helper function to parse authenticatorHub for dynamic users
+func parseAuthenticatorHub(uv map[string]interface{}) (*AuthenticatorHub, error) {
+	au := &AuthenticatorHub{}
+	for k, v := range uv {
+		switch strings.ToLower(k) {
+		case "auth_authenticator", "auth_authenticators":
+			au.AuthAuthenticator = v.(string)
+		case "subscribe_authenticator", "subscribe_authenticators":
+			au.SubAuthenticator = v.(string)
+		case "publish_authenticator", "publish_authenticators":
+			au.PubAuthenticator = v.(string)
+		default:
+			return nil, fmt.Errorf("Unknown field %s parsing authenticatorHub", k)
+		}
+	}
+	return au, nil
 }
 
 // Helper function to parse multiple users array with optional permissions.
@@ -424,8 +444,6 @@ func parseUsers(mv interface{}) ([]*User, error) {
 					return nil, err
 				}
 				user.Permissions = permissions
-			case "authenticator", "authenticators":
-				user.Authenticator = v.(string)
 			case "token", "tokens":
 				user.Token = fmt.Sprintf("%v", v)
 			}

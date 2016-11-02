@@ -748,6 +748,20 @@ func (s *Server) checkAuth(c *client) bool {
 	}
 }
 
+func (s *Server) checkSub(c *client, subject string) bool {
+	if s.cAuth == nil {
+		return true
+	}
+	return s.cAuth.CheckSub(c, subject)
+}
+
+func (s *Server) checkPub(c *client, subject string) bool {
+	if s.cAuth == nil {
+		return true
+	}
+	return s.cAuth.CheckPub(c, subject)
+}
+
 // Remove a client or route from our internal accounting.
 func (s *Server) removeClient(c *client) {
 	var rID string
