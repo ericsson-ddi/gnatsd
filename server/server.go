@@ -752,6 +752,7 @@ func (s *Server) checkSub(c *client, subject string) bool {
 	if s.cAuth == nil {
 		return true
 	}
+	fmt.Println("i am s.cAuth: ", s.cAuth)
 	return s.cAuth.CheckSub(c, subject)
 }
 

@@ -1032,6 +1032,8 @@ func (c *client) processMsg(msg []byte) {
 				return
 			}
 		}
+	} else if !srv.cAuth.CheckPub(c, string(c.pa.subject)) {
+		return
 	}
 
 	if c.opts.Verbose {

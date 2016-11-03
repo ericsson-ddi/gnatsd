@@ -18,6 +18,7 @@ import (
 type DynamicUser struct {
 	users            map[string]*server.User
 	authenticatorhub *server.AuthenticatorHub
+	authTimeout      float64
 }
 
 type AuthenticatorStatus struct {
@@ -25,7 +26,7 @@ type AuthenticatorStatus struct {
 }
 
 // Create a new multi-user
-func NewDynamicUser(users []*server.User, authenticatorhub *server.AuthenticatorHub) *DynamicUser {
+func NewDynamicUser(users []*server.User, authenticatorhub *server.AuthenticatorHub, authTimeout float64) *DynamicUser {
 
 	m := &DynamicUser{users: make(map[string]*server.User)}
 	for _, u := range users {
@@ -37,6 +38,7 @@ func NewDynamicUser(users []*server.User, authenticatorhub *server.Authenticator
 	}
 
 	m.authenticatorhub = authenticatorhub
+	m.authTimeout = authTimeout
 	return m
 }
 
@@ -45,22 +47,20 @@ func (m *DynamicUser) Check(c server.ClientAuth) bool {
 	opts := c.GetOpts()
 
 	//Todo: token??
+	if opts.Authorization == "" && opts.Username == "" {
+		return false
+	}
+
 	user := m.users[opts.Username]
 	if user != nil {
-		pass := user.Password
-
-		// Check to see if the password is a bcrypt hash
-		if isBcrypt(pass) {
-			if err := bcrypt.CompareHashAndPassword([]byte(pass), []byte(opts.Password)); err != nil {
-				return false
-			}
-		} else if pass != opts.Password {
+		if !passAuth(user.Password, opts.Password) {
 			return false
 		}
+
 		c.RegisterUser(user)
 
 		return true
-	} else if authAuthenticatorRequest(m.authenticatorhub.AuthAuthenticator, opts.Username, opts.Password) {
+	} else if authAuthenticatorRequest(m.authenticatorhub.AuthAuthenticator, opts.Username, opts.Password, opts.Authorization, m.authTimeout) {
 		user = &server.User{Username: opts.Username, Password: opts.Password, Permissions: nil, Token: opts.Authorization}
 		c.RegisterUser(user)
 
@@ -75,7 +75,7 @@ func (m *DynamicUser) CheckSub(c server.ClientAuth, subject string) bool {
 	opts := c.GetOpts()
 
 	//Todo: token??
-	if subAuthenticatorRequest(m.authenticatorhub.SubAuthenticator, opts.Username, subject) {
+	if subAuthenticatorRequest(m.authenticatorhub.SubAuthenticator, opts.Username, opts.Authorization, subject, m.authTimeout) {
 		return true
 	}
 
@@ -87,21 +87,38 @@ func (m *DynamicUser) CheckPub(c server.ClientAuth, subject string) bool {
 	opts := c.GetOpts()
 
 	//Todo: token??
-	if pubAuthenticatorRequest(m.authenticatorhub.PubAuthenticator, opts.Username, subject) {
+	if pubAuthenticatorRequest(m.authenticatorhub.PubAuthenticator, opts.Username, opts.Authorization, subject, m.authTimeout) {
 		return true
 	}
 
 	return false
 }
 
-func authAuthenticatorRequest(authAuthenticatorUrl string, username string, password string) bool {
-	timeout := time.Duration(25 * time.Millisecond)
+func passAuth(configPass string, userPass string) bool {
+	// Check to see if the password is a bcrypt hash
+	if isBcrypt(configPass) {
+		if err := bcrypt.CompareHashAndPassword([]byte(configPass), []byte(userPass)); err != nil {
+			return false
+		}
+	} else if configPass != userPass {
+		return false
+	}
+	return true
+}
+
+func authAuthenticatorRequest(authAuthenticatorUrl string, username string, password string, token string, authTimeout float64) bool {
+	timeout := time.Duration(authTimeout * float64(time.Second))
 	client := http.Client{
 		Timeout: timeout,
 	}
 
-	resp, err := client.PostForm(authAuthenticatorUrl,
-		url.Values{"username": {username}, "password": {password}})
+	values := url.Values{}
+	if token != "" {
+		values = url.Values{"token": {token}}
+	} else {
+		values = url.Values{"username": {username}, "password": {password}}
+	}
+	resp, err := client.PostForm(authAuthenticatorUrl, values)
 
 	if err != nil {
 		server.Errorf("authAuthenticatorRequest Error: %v", err)
@@ -115,6 +132,7 @@ func authAuthenticatorRequest(authAuthenticatorUrl string, username string, pass
 		return false
 	}
 	server.Debugf("authAuthenticatorRequest Body: %v", string(body))
+	server.Noticef("authAuthenticatorRequest Body: %v", string(body))
 
 	authenticatorStatus := AuthenticatorStatus{Status: ""}
 	err = json.Unmarshal(body, &authenticatorStatus)
@@ -131,14 +149,19 @@ func authAuthenticatorRequest(authAuthenticatorUrl string, username string, pass
 	return true
 }
 
-func subAuthenticatorRequest(authAuthenticatorUrl string, username string, subject string) bool {
-	timeout := time.Duration(15 * time.Millisecond)
+func subAuthenticatorRequest(authAuthenticatorUrl string, username string, token string, subject string, authTimeout float64) bool {
+	timeout := time.Duration(authTimeout * float64(time.Second))
 	client := http.Client{
 		Timeout: timeout,
 	}
 
-	resp, err := client.PostForm(authAuthenticatorUrl,
-		url.Values{"username": {username}, "sujbect": {subject}})
+	values := url.Values{}
+	if token != "" {
+		values = url.Values{"token": {token}, "subject": {subject}}
+	} else {
+		values = url.Values{"username": {username}, "subject": {subject}}
+	}
+	resp, err := client.PostForm(authAuthenticatorUrl, values)
 
 	if err != nil {
 		server.Errorf("subAuthenticatorRequest Error: %v", err)
@@ -169,14 +192,19 @@ func subAuthenticatorRequest(authAuthenticatorUrl string, username string, subje
 	return true
 }
 
-func pubAuthenticatorRequest(authAuthenticatorUrl string, username string, subject string) bool {
-	timeout := time.Duration(15 * time.Millisecond)
+func pubAuthenticatorRequest(authAuthenticatorUrl string, username string, token string, subject string, authTimeout float64) bool {
+	timeout := time.Duration(authTimeout * float64(time.Second))
 	client := http.Client{
 		Timeout: timeout,
 	}
 
-	resp, err := client.PostForm(authAuthenticatorUrl,
-		url.Values{"username": {username}, "subject": {subject}})
+	values := url.Values{}
+	if token != "" {
+		values = url.Values{"token": {token}, "subject": {subject}}
+	} else {
+		values = url.Values{"username": {username}, "subject": {subject}}
+	}
+	resp, err := client.PostForm(authAuthenticatorUrl, values)
 
 	if err != nil {
 		server.Errorf("pubAuthenticatorRequest Error: %v", err)
