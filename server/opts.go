@@ -22,14 +22,7 @@ type User struct {
 	Username    string       `json:"user"`
 	Password    string       `json:"password"`
 	Permissions *Permissions `json:"permissions"`
-	Token       string       `json:"token"`
-}
-
-// Authenticator for auth, publish or subscribe
-type AuthenticatorHub struct {
-	AuthAuthenticator string `json:"auth_authenticator"`
-	SubAuthenticator  string `json:"subscribe_authenticator"`
-	PubAuthenticator  string `json:"publish_authenticator"`
+	Extension   map[string]string `json:"extension"`
 }
 
 // Authorization are the allowed subjects on a per
@@ -52,8 +45,6 @@ type Options struct {
 	Users              []*User           `json:"-"`
 	Username           string            `json:"-"`
 	Password           string            `json:"-"`
-	AuthenticatorHub   *AuthenticatorHub `json:"-"`
-	DynamicUser        bool              `json:"-"`
 	Authorization      string            `json:"-"`
 	PingInterval       time.Duration     `json:"ping_interval"`
 	MaxPingsOut        int               `json:"ping_max"`
@@ -98,8 +89,6 @@ type authorization struct {
 	users              []*User
 	timeout            float64
 	defaultPermissions *Permissions
-	authenticatorHub   *AuthenticatorHub
-	dynamicUser        bool
 }
 
 // TLSConfigOpts holds the parsed tls config information,
@@ -186,11 +175,7 @@ func ProcessConfigFile(configFile string) (*Options, error) {
 					return nil, fmt.Errorf("Can not have a single user/pass and a users array")
 				}
 				opts.Users = auth.users
-				if auth.authenticatorHub != nil {
-					opts.AuthenticatorHub = auth.authenticatorHub
-				}
 			}
-			opts.DynamicUser = auth.dynamicUser
 		case "http":
 			hp, err := parseListen(v)
 			if err != nil {
@@ -368,18 +353,6 @@ func parseAuthorization(am map[string]interface{}) (*authorization, error) {
 				return nil, err
 			}
 			auth.defaultPermissions = permissions
-		case "authenticator_hub", "authenticator_hubs":
-			uv, ok := mv.(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("Expected users field to be an array, got %v", mv)
-			}
-			authenticatorHub, err := parseAuthenticatorHub(uv)
-			if err != nil {
-				return nil, err
-			}
-			auth.authenticatorHub = authenticatorHub
-		case "dynamic_user":
-			auth.dynamicUser = mv.(bool)
 		}
 
 		// Now check for permission defaults with multiple users, etc.
@@ -393,24 +366,6 @@ func parseAuthorization(am map[string]interface{}) (*authorization, error) {
 
 	}
 	return auth, nil
-}
-
-// Helper function to parse authenticatorHub for dynamic users
-func parseAuthenticatorHub(uv map[string]interface{}) (*AuthenticatorHub, error) {
-	au := &AuthenticatorHub{}
-	for k, v := range uv {
-		switch strings.ToLower(k) {
-		case "auth_authenticator", "auth_authenticators":
-			au.AuthAuthenticator = v.(string)
-		case "subscribe_authenticator", "subscribe_authenticators":
-			au.SubAuthenticator = v.(string)
-		case "publish_authenticator", "publish_authenticators":
-			au.PubAuthenticator = v.(string)
-		default:
-			return nil, fmt.Errorf("Unknown field %s parsing authenticatorHub", k)
-		}
-	}
-	return au, nil
 }
 
 // Helper function to parse multiple users array with optional permissions.
@@ -444,13 +399,21 @@ func parseUsers(mv interface{}) ([]*User, error) {
 					return nil, err
 				}
 				user.Permissions = permissions
-			case "token", "tokens":
-				user.Token = fmt.Sprintf("%v", v)
+			case "extension":
+				ext := make(map[string]string)
+				data, ok := v.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("Expected user extension to be a map, got %+v", v)
+				}
+				for key, value := range data {
+					ext[key] = value.(string)
+				}
+				user.Extension = ext
 			}
 		}
 		// Check to make sure we have at least username and password
-		if (user.Username == "" || user.Password == "") && user.Token == "" {
-			return nil, fmt.Errorf("User entry requires a user and a password, or just a token")
+		if (user.Username == "" || user.Password == "") {
+			return nil, fmt.Errorf("User entry requires a user and a password")
 		}
 		users = append(users, user)
 	}

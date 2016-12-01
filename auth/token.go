@@ -24,11 +24,3 @@ func (p *Token) Check(c server.ClientAuth) bool {
 
 	return true
 }
-
-func (p *Token) CheckSub(c server.ClientAuth, subject string) bool {
-	return true
-}
-
-func (p *Token) CheckPub(c server.ClientAuth, subject string) bool {
-	return true
-}

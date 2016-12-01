@@ -39,10 +39,3 @@ func (p *Plain) Check(c server.ClientAuth) bool {
 	return true
 }
 
-func (p *Plain) CheckSub(c server.ClientAuth, subject string) bool {
-	return true
-}
-
-func (p *Plain) CheckPub(c server.ClientAuth, subject string) bool {
-	return true
-}

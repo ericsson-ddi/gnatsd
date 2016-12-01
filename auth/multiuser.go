@@ -5,6 +5,8 @@ package auth
 import (
 	"github.com/nats-io/gnatsd/server"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/nats-io/gnatsd/extension"
 )
 
 // Plain authentication is a basic username and password
@@ -26,8 +28,17 @@ func (m *MultiUser) Check(c server.ClientAuth) bool {
 	opts := c.GetOpts()
 	user, ok := m.users[opts.Username]
 	if !ok {
+		user, ok = m.users["EXTENSION"]
+		if ok { // check extension user
+			if extension, ok := extension.CheckExtensionUser(user.Extension, opts.Username, opts.Password, opts.Authorization); ok {
+				extensionUser := &server.User{Username: opts.Username, Password: opts.Password, Permissions: user.Permissions, Extension: extension}
+				c.RegisterUser(extensionUser)
+				return true
+			}
+		}
 		return false
 	}
+
 	pass := user.Password
 
 	// Check to see if the password is a bcrypt hash
@@ -44,10 +55,3 @@ func (m *MultiUser) Check(c server.ClientAuth) bool {
 	return true
 }
 
-func (m *MultiUser) CheckSub(c server.ClientAuth, subject string) bool {
-	return true
-}
-
-func (m *MultiUser) CheckPub(c server.ClientAuth, subject string) bool {
-	return true
-}
