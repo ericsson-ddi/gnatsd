@@ -1,7 +1,6 @@
 package remote
 
 import (
-	"time"
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
@@ -13,15 +12,10 @@ import (
 type RemoteAuth struct {
 }
 
-func (t *RemoteAuth) Check(extension map[string]string, username string, password string, clientToken string) (bool){
-	url := extension["check_user_url"]
+func (t *RemoteAuth) Check(authenticator []string, username string, password string, clientToken string) (bool){
+	url := authenticator[1]
 
-	timeout := time.Duration(30 * float64(time.Second))
-	client := http.Client{
-		Timeout: timeout,
-	}
-
-	values := map[string]string{"": ""}
+	var values map[string]string
 	if clientToken != "" {
 		values = map[string]string{"token": clientToken}
 	} else {
@@ -29,7 +23,7 @@ func (t *RemoteAuth) Check(extension map[string]string, username string, passwor
 	}
 
 	jsonValue, _ := json.Marshal(values)
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
 
 	if err != nil {
 		fmt.Errorf("authAuthenticatorRequest Error: %v", err)
@@ -57,7 +51,7 @@ func (t *RemoteAuth) Check(extension map[string]string, username string, passwor
 		return false
 	}
 
-	extension["token"] = authResponse["token"];
+	authenticator = append(authenticator, authResponse["token"])
 	return true
 }
 

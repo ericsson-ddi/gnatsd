@@ -28,11 +28,11 @@ func (m *MultiUser) Check(c server.ClientAuth) bool {
 	opts := c.GetOpts()
 	user, ok := m.users[opts.Username]
 	if !ok {
-		user, ok = m.users["EXTENSION"]
-		if ok { // check extension user
-			if extension, ok := extension.CheckExtensionUser(user.Extension, opts.Username, opts.Password, opts.Authorization); ok {
-				extensionUser := &server.User{Username: opts.Username, Password: opts.Password, Permissions: user.Permissions, Extension: extension}
-				c.RegisterUser(extensionUser)
+		user, ok = m.users["EXTERNAL"]
+		if ok { // check external user
+			if authenticator, ok := extension.CheckExternalUser(user.Authenticator, opts.Username, opts.Password, opts.Authorization); ok {
+				externalUser := &server.User{Username: opts.Username, Password: opts.Password, Permissions: user.Permissions, Authenticator: authenticator}
+				c.RegisterUser(externalUser)
 				return true
 			}
 		}

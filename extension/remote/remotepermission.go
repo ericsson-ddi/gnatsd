@@ -2,7 +2,6 @@ package remote
 
 import (
 	"io/ioutil"
-	"time"
 	"net/http"
 	"fmt"
 )
@@ -10,20 +9,20 @@ import (
 type RemotePermission struct {
 }
 
-func setRemoteToken(clientExtension map[string]string, userExtension map[string]string){
+func setRemoteToken(clientExtension map[string]string, authenticator []string){
 	// Set remote token to clientAuth
-	if userExtension["token"] != "" {
-		clientExtension["token"] = userExtension["token"]
+	if len(authenticator) > 2 && authenticator[2] != "" {
+		clientExtension["token"] = authenticator[2]
 	}
 }
-func (r *RemotePermission) RegisterSubscribePermission(clientExtension map[string]string, userExtension map[string]string, subscribe []string) {
-	setRemoteToken(clientExtension, userExtension)
+func (r *RemotePermission) RegisterSubscribePermission(clientExtension map[string]string, authenticator []string, subscribe []string) {
+	setRemoteToken(clientExtension, authenticator)
 	clientExtension["subscribe"] = subscribe[1]
 }
 
 
-func (r *RemotePermission) RegisterPublishPermission(clientExtension map[string]string, userExtension map[string]string, publish []string) {
-	setRemoteToken(clientExtension, userExtension)
+func (r *RemotePermission) RegisterPublishPermission(clientExtension map[string]string, authenticator []string, publish []string) {
+	setRemoteToken(clientExtension, authenticator)
 	clientExtension["publish"] = publish[1]
 }
 
@@ -35,14 +34,9 @@ func (r *RemotePermission) CheckSubscribe(clientExtension map[string]string, sub
 	token := clientExtension["token"]
 	sub := clientExtension["subscribe"]
 
-	timeout := time.Duration(30 * float64(time.Second))
-	client := http.Client{
-		Timeout: timeout,
-	}
-
 	values := sub + "?token=" + token + "&&subject=" + subject
 
-	resp, err := client.Get(values)
+	resp, err := http.Get(values)
 
 	if err != nil {
 		fmt.Errorf("subAuthenticatorRequest Error: %v", err)
@@ -74,14 +68,9 @@ func (r *RemotePermission) CheckPublish(clientExtension map[string]string, subje
 	token := clientExtension["token"]
 	pub := clientExtension["publish"]
 
-	timeout := time.Duration(30 * float64(time.Second))
-	client := http.Client{
-		Timeout: timeout,
-	}
-
 	values := pub + "?token=" + token + "&&subject=" + subject
 
-	resp, err := client.Get(values)
+	resp, err := http.Get(values)
 
 	if err != nil {
 		fmt.Errorf("pubAuthenticatorRequest Error: %v", err)

@@ -1035,8 +1035,6 @@ func (c *client) processMsg(msg []byte) {
 				return
 			}
 		}
-	} else if !srv.cAuth.CheckPub(c, string(c.pa.subject)) {
-		return
 	}
 
 	if c.opts.Verbose {
@@ -1376,10 +1374,7 @@ func (c *client) registerExtendPermission(user *User){
 		if c.opts.Extension == nil {
 			c.opts.Extension = make(map[string]string)
 		}
-		if user.Extension == nil {
-			user.Extension = make(map[string]string)
-		}
-		extension.RegisterPermission(c.opts.Extension, user.Extension, user.Permissions.Publish, user.Permissions.Subscribe)
+		extension.RegisterPermission(c.opts.Extension, user.Authenticator, user.Permissions.Publish, user.Permissions.Subscribe)
 	}
 }
 

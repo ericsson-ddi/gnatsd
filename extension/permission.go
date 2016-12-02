@@ -6,13 +6,13 @@ import (
 )
 
 type Permission interface {
-	RegisterSubscribePermission(clientExtension map[string]string, userExtension map[string]string, subscribe []string)
-	RegisterPublishPermission(clientExtension map[string]string, userExtension map[string]string, publish []string)
+	RegisterSubscribePermission(clientExtension map[string]string, authenticator []string, subscribe []string)
+	RegisterPublishPermission(clientExtension map[string]string, authenticator []string, publish []string)
 	CheckSubscribe(clientExtension map[string]string, subject string) bool
 	CheckPublish(clientExtension map[string]string, subject string) bool
 }
 
-func RegisterPermission(clientExtension map[string]string, userExtension map[string]string, publish []string, subscribe []string){
+func RegisterPermission(clientExtension map[string]string, authenticator []string, publish []string, subscribe []string){
 	golangType := publish[0]
 	if strings.HasPrefix(golangType, "golang_type."){
 		golangType = strings.Replace(golangType, "golang_type.", "", 1)
@@ -23,7 +23,7 @@ func RegisterPermission(clientExtension map[string]string, userExtension map[str
 
 		params := make([]reflect.Value, 3)
 		params[0] = reflect.ValueOf(clientExtension)
-		params[1] = reflect.ValueOf(userExtension)
+		params[1] = reflect.ValueOf(authenticator)
 		params[2] = reflect.ValueOf(publish)
 		v.MethodByName("RegisterPublishPermission").Call(params)
 	}
@@ -38,7 +38,7 @@ func RegisterPermission(clientExtension map[string]string, userExtension map[str
 
 		params := make([]reflect.Value, 3)
 		params[0] = reflect.ValueOf(clientExtension)
-		params[1] = reflect.ValueOf(userExtension)
+		params[1] = reflect.ValueOf(authenticator)
 		params[2] = reflect.ValueOf(subscribe)
 		v.MethodByName("RegisterSubscribePermission").Call(params)
 	}

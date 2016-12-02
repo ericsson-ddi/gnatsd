@@ -22,7 +22,7 @@ type User struct {
 	Username    string       `json:"user"`
 	Password    string       `json:"password"`
 	Permissions *Permissions `json:"permissions"`
-	Extension   map[string]string `json:"extension"`
+	Authenticator   []string     `json:"authenticator"`
 }
 
 // Authorization are the allowed subjects on a per
@@ -399,21 +399,31 @@ func parseUsers(mv interface{}) ([]*User, error) {
 					return nil, err
 				}
 				user.Permissions = permissions
-			case "extension":
-				ext := make(map[string]string)
-				data, ok := v.(map[string]interface{})
-				if !ok {
-					return nil, fmt.Errorf("Expected user extension to be a map, got %+v", v)
+			case "authenticator":
+				var params []string
+				switch v.(type) {
+				case []string:
+					params = v.([]string)
+				case []interface{}:
+					for _, i := range v.([]interface{}) {
+						data, ok := i.(string)
+						if !ok {
+							return nil, fmt.Errorf("Parameter in authenticator array cannot be cast to string")
+						}
+						params = append(params, data)
+					}
+				default:
+					return nil, fmt.Errorf("Expected authenticator to be a string array, got %T", v)
 				}
-				for key, value := range data {
-					ext[key] = value.(string)
-				}
-				user.Extension = ext
+				user.Authenticator = params
 			}
 		}
 		// Check to make sure we have at least username and password
-		if (user.Username == "" || user.Password == "") {
+		if (user.Username == "" || user.Password == "") && user.Username != "EXTERNAL" {
 			return nil, fmt.Errorf("User entry requires a user and a password")
+		}
+		if user.Username == "EXTERNAL" && user.Authenticator == nil {
+			return nil, fmt.Errorf("External user entry requires authenticator")
 		}
 		users = append(users, user)
 	}
